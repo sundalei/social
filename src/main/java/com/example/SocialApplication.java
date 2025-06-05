@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
@@ -29,8 +30,9 @@ public class SocialApplication {
     @GetMapping("/user")
     public Map<String, Object> user(@AuthenticationPrincipal OAuth2User principal) {
 
-        LOG.info("user method is invoked with principal {}", principal.getAttributes());
-        return Collections.singletonMap("name", principal.getAttribute("name"));
+        String authenticated = principal.getAttribute("name");
+        LOG.info("user method is invoked with principal {}", authenticated);
+        return Collections.singletonMap("name", authenticated);
     }
 
     public static void main(String[] args) {
@@ -46,7 +48,9 @@ public class SocialApplication {
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
-                .oauth2Login(Customizer.withDefaults());
+                .oauth2Login(Customizer.withDefaults())
+                .logout(l -> l.logoutSuccessUrl("/").permitAll())
+                .csrf(AbstractHttpConfigurer::disable);
 
         return http.build();
     }
