@@ -9,13 +9,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collections;
 import java.util.Map;
@@ -28,7 +32,14 @@ public class SocialApplication {
     private static final Logger LOG = LoggerFactory.getLogger(SocialApplication.class);
 
     @GetMapping("/user")
-    public Map<String, Object> user(@AuthenticationPrincipal OAuth2User principal) {
+    public Map<String, Object> user(@AuthenticationPrincipal OAuth2User principal, HttpServletRequest request) {
+
+        CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+        // Accessing the token will force it to be included in the response
+        // Purpose here is to make the token always available. Even when at the beginning of login.
+        if (token != null) {
+            token.getToken();
+        }
 
         String authenticated = principal.getAttribute("name");
         LOG.info("user method is invoked with principal {}", authenticated);
@@ -50,7 +61,10 @@ public class SocialApplication {
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .oauth2Login(Customizer.withDefaults())
                 .logout(l -> l.logoutSuccessUrl("/").permitAll())
-                .csrf(AbstractHttpConfigurer::disable);
+                .csrf(csrf -> csrf
+                        .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                        // https://www.linkedin.com/pulse/solving-invalid-csrf-token-found-error-spring-security-oyeleye
+                        .csrfTokenRequestHandler(new CsrfTokenRequestAttributeHandler()));
 
         return http.build();
     }
