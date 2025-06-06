@@ -25,19 +25,27 @@
     </div>
 
     <script type="text/javascript">
+      let header = null;
+      let token = null;
+
       $.ajaxSetup({
         beforeSend : function(xhr, settings) {
-          if (settings.type == 'POST' || settings.type == 'PUT' || settings.type == 'DELETE') {
+          if (settings.type === 'POST' || settings.type === 'PUT' || settings.type === 'DELETE') {
             if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
               // Only send the token to relative URLs i.e. locally.
               console.log("Sending XSRF-TOKEN: " + Cookies.get('XSRF-TOKEN'));
-              xhr.setRequestHeader("X-XSRF-TOKEN", Cookies.get('XSRF-TOKEN'));
+              xhr.setRequestHeader(header, token);
             }
           }
         }
       });
 
       $.get("/user", function(data) {
+
+        // Get the token and header name from the response payload
+        token = data.token;
+        header = data.tokenHeader;
+
         $("#user").html(data.name);
         $(".unauthenticated").hide();
         $(".authenticated").show();

@@ -19,9 +19,7 @@ import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import jakarta.servlet.http.HttpServletRequest;
-
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 @SpringBootApplication
@@ -33,19 +31,16 @@ public class SocialApplication {
 
     @GetMapping("/user")
     public Map<String, Object> user(@AuthenticationPrincipal OAuth2User principal,
-                                    HttpServletRequest request) {
-
-        // Accessing the token will force it to be included in the response.
-        // The Purpose here is to make the token always available. Even when at the beginning of login.
-        CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
-
-        if (token != null) {
-            token.getToken();
-        }
+                                    CsrfToken csrfToken) {
 
         String authenticated = principal.getAttribute("name");
         LOG.info("user method is invoked with principal {}", authenticated);
-        return Collections.singletonMap("name", authenticated);
+
+        Map<String, Object> map = new HashMap<>();
+        map.put("name", authenticated);
+        map.put("token", csrfToken.getToken());
+        map.put("tokenHeader", csrfToken.getHeaderName());
+        return map;
     }
 
     public static void main(String[] args) {
