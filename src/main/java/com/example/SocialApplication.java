@@ -32,11 +32,13 @@ public class SocialApplication {
     private static final Logger LOG = LoggerFactory.getLogger(SocialApplication.class);
 
     @GetMapping("/user")
-    public Map<String, Object> user(@AuthenticationPrincipal OAuth2User principal, HttpServletRequest request) {
+    public Map<String, Object> user(@AuthenticationPrincipal OAuth2User principal,
+                                    HttpServletRequest request) {
 
+        // Accessing the token will force it to be included in the response.
+        // The Purpose here is to make the token always available. Even when at the beginning of login.
         CsrfToken token = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
-        // Accessing the token will force it to be included in the response
-        // Purpose here is to make the token always available. Even when at the beginning of login.
+
         if (token != null) {
             token.getToken();
         }
